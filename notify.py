@@ -64,5 +64,5 @@ async def _post(text: str) -> None:
                                              "parse_mode": "HTML", "disable_web_page_preview": True})
         if r.status_code != 200:
             log.warning("telegram: %s %s", r.status_code, r.text[:200])
-    except Exception:  # noqa: BLE001 — сеть или Telegram недоступны: уведомление теряем, сайт работает
+    except Exception:  # сеть или Telegram недоступны: уведомление теряем, сайт работает
         log.warning("telegram: send failed", exc_info=True)
