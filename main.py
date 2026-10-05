@@ -2,13 +2,15 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import db
+import live
 
 STATIC_DIR = Path(__file__).parent / "static"
+SITE_URL = "https://codevibehub.org"
 log = logging.getLogger("codevibehub")
 
 
@@ -25,11 +27,37 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CodeVibeHub", docs_url=None, redoc_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.include_router(live.router)  # WebSocket /ws/live — живой слой лендинга
+
+
+@app.middleware("http")
+async def redirect_www(request: Request, call_next):
+    host = request.headers.get("host", "")
+    if host.startswith("www."):
+        url = request.url.replace(scheme="https", netloc=host.removeprefix("www."))
+        return RedirectResponse(str(url), status_code=301)
+    return await call_next(request)
 
 
 @app.get("/", include_in_schema=False)
 def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/robots.txt", include_in_schema=False)
+def robots():
+    return PlainTextResponse(f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /ws/\n\nSitemap: {SITE_URL}/sitemap.xml\n")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap():
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"  <url><loc>{SITE_URL}/</loc></url>\n"
+        "</urlset>\n"
+    )
+    return Response(xml, media_type="application/xml")
 
 
 @app.get("/healthz", include_in_schema=False)

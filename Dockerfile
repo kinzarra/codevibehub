@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py db.py ./
+COPY main.py db.py live.py ./
 COPY static ./static
 
 EXPOSE 8000
