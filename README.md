@@ -19,7 +19,31 @@ cp .env.example .env                   # и вписать свой POSTGRES_DSN
 .venv/bin/uvicorn main:app --reload --env-file .env    # http://127.0.0.1:8000
 ```
 
+## Процесс разработки
+
+`main` защищена: прямой push запрещён, изменения — только через Pull Request.
+
+```bash
+git checkout -b feature/xyz
+# ...коммиты...
+git push -u origin feature/xyz   # затем открыть PR в main на GitHub
+```
+
+- **CI** (`.github/workflows/ci.yml`) — на каждый PR: ruff, smoke-тест с Postgres, сборка Docker-образа.
+- **Deploy** (`.github/workflows/deploy.yml`) — после merge в `main`: `./deploy.sh` от пользователя
+  `deploy` по SSH (секрет `DEPLOY_SSH_KEY`), затем проверка `/healthz`. Можно запустить вручную
+  (Actions → Deploy → Run workflow).
+
+## Живой лендинг
+
+`live.py` — WebSocket `/ws/live`: посетители видят курсоры, следы и разрезы букв друг друга.
+Состояние в памяти процесса, поэтому uvicorn должен работать **одним воркером**. Обратный прокси
+перед контейнером должен пропускать WebSocket (заголовки `Upgrade`/`Connection`), иначе лендинг
+работает как обычно, но без живого слоя. Клиент — `static/landing/live.js`, работает только при `<body data-landing>`.
+
 ## Деплой
+
+Обычно — автоматически после merge. Вручную (нужен SSH-доступ под `deploy`):
 
 ```bash
 ./deploy.sh

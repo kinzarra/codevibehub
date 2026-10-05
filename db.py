@@ -31,5 +31,5 @@ async def ping() -> bool:
         async with engine.connect() as conn:
             await conn.execute(text("select 1"))
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001 — health check не должен падать: любая ошибка = БД недоступна
         return False

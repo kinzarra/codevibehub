@@ -1,0 +1,36 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: deploy@157.180.81.21
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "157.180.81.21 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPPjfW+DLKpwmZATBY+KV3TrYFE2vva7qT9sTvvYdpgg" > ~/.ssh/known_hosts
+      - name: Deploy
+        run: ./deploy.sh
+      - name: Health check
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://157.180.81.21:8080/healthz | grep -q '"db":"ok"' && exit 0
+            sleep 2
+          done
+          echo "Health check failed"; curl -s http://157.180.81.21:8080/healthz; exit 1

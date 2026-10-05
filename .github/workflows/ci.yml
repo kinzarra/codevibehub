@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vibecode
+          POSTGRES_PASSWORD: vibecode
+          POSTGRES_DB: vibecode
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vibecode"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      POSTGRES_DSN: postgresql+asyncpg://vibecode:vibecode@localhost:5432/vibecode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      # ruff зафиксирован: новые версии включают правила по умолчанию и роняют CI без изменений в коде
+      - run: pip install -r requirements.txt ruff==0.16.10
+      - name: Lint
+        run: ruff check .
+      - name: Smoke test
+        run: |
+          uvicorn main:app --port 8000 &
+          for i in $(seq 1 20); do curl -sf localhost:8000/healthz && break; sleep 1; done
+          curl -sf localhost:8000/ -o /dev/null
+          curl -sf localhost:8000/healthz | grep -q '"db":"ok"'
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t codevibehub:ci .
