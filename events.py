@@ -21,6 +21,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import db
+import notify
 import storage
 from auth import can_delete, can_edit, csrf_ok, page_ctx, session_user
 from models import (
@@ -213,6 +214,10 @@ async def _toggle_item(request: Request, session: AsyncSession, slug: str, kind:
         await session.execute(delete(model).where(model.event_id == ev.id, model.user_id == uid, model.item_id == item_id))
     await session.commit()
     count = await session.scalar(select(func.count()).select_from(model).where(model.event_id == ev.id, model.item_id == item_id))
+    if on:
+        item = next(i for i in getattr(ev, field) if i.get("id") == item_id)
+        what = f"♥ лайк пункту программы «{notify.esc(item.get('title'))}»" if kind == "agenda" else f"🙋 «это я»: {notify.esc(item.get('text'))}"
+        notify.send(f"{what}\n{notify.esc(user['name'])} ({notify.esc(user['email'])}) · всего {count}\n{notify.event_link(ev)}")
     return JSONResponse({"on": on, "count": count}, headers={"Cache-Control": "no-store"})
 
 
@@ -241,6 +246,8 @@ async def toggle_rsvp(slug: str, request: Request, session: SessionDep):
         await session.execute(delete(EventRsvp).where(EventRsvp.event_id == ev.id, EventRsvp.visitor_id == vid))
     await session.commit()
     count = await session.scalar(select(func.count()).select_from(EventRsvp).where(EventRsvp.event_id == ev.id))
+    if going:
+        notify.send(f"✅ Кто-то нажал «Я пойду» · всего {count}\n{notify.event_link(ev)}")
     return _with_cookie(JSONResponse({"going": going, "count": count}, headers={"Cache-Control": "no-store"}), request, vid)
 
 
@@ -249,6 +256,8 @@ async def toggle_rsvp(slug: str, request: Request, session: SessionDep):
 async def _count_click(session: AsyncSession, ev: Event, kind: str, vid: uuid.UUID) -> None:
     session.add(EventCalendarClick(event_id=ev.id, kind=kind, visitor_id=vid))
     await session.commit()
+    where = "Google Calendar" if kind == "google" else "календарь (.ics)"
+    notify.send(f"📅 Кто-то добавил в {where}\n{notify.event_link(ev)}")
 
 
 @router.get("/events/{slug}/calendar/google", include_in_schema=False)

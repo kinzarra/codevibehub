@@ -21,6 +21,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 
 import db
+import notify
 from models import Event, User
 from web import env
 
@@ -205,13 +206,16 @@ _POPUP = ('<!doctype html><meta charset="utf-8"><title>Google</title><body style
 async def _upsert_user(email: str, name: str) -> User:
     async with db.SessionLocal() as session:
         user = await session.scalar(select(User).where(User.email == email))
-        if user is None:
+        is_new = user is None
+        if is_new:
             user = User(email=email, name=name)
             session.add(user)
         else:
             user.name = name or user.name
             user.last_login_at = datetime.now(timezone.utc)
         await session.commit()
+        if is_new:
+            notify.send(f"👤 Новый пользователь: {notify.esc(name)} ({notify.esc(email)})")
         return user
 
 
