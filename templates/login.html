@@ -1,0 +1,17 @@
+{% extends "editor_base.html" %}
+{% block page_title %}Вход{% endblock %}
+{% block content %}
+<main class="ev ed-narrow">
+  <section class="ev-hero">
+    <p class="badge"><span class="dot"></span>Code Vibe</p>
+    <h1 class="ev-title">Вход</h1>
+    <p class="lead">Войдите через Google, чтобы отмечать, что вам интересно на мероприятиях. Отдельной регистрации нет.</p>
+    {% if denied == "unverified" %}<p class="ed-error">Этот Google-аккаунт без подтверждённого email, войти не получится.</p>
+    {% elif denied %}<p class="ed-error">Не удалось войти через Google. Попробуйте ещё раз.</p>{% endif %}
+    <div class="actions">
+      <a class="btn btn-primary" href="/auth/google?next={{ next | urlencode }}">Войти через Google</a>
+    </div>
+    <p class="ed-hint">Мы сохраним ваше имя и email из Google. Организаторы мероприятий увидят их вместе с вашими отметками.</p>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "editor_base.html" %}
+{% block page_title %}Нет доступа{% endblock %}
+{% block content %}
+<main class="ev ed-narrow">
+  <section class="ev-hero">
+    <p class="badge"><span class="dot"></span>Code Vibe</p>
+    <h1 class="ev-title">Нет доступа</h1>
+    <p class="lead">У вашего аккаунта нет прав на эту страницу. Создавать мероприятия могут организаторы клуба, а править конкретное мероприятие и смотреть отметки: его организатор и соавторы. Отмечать, что вам интересно, можно на страницах мероприятий.</p>
+    <div class="actions"><a class="btn btn-primary" href="/events/">К афише</a></div>
+  </section>
+</main>
+{% endblock %}

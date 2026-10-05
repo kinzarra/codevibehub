@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Мероприятия — Code Vibe{% endblock %}
+{% block description %}Вебинары и встречи клуба Code Vibe: вайб-кодинг, ИИ-агенты, реальные кейсы и живые демо.{% endblock %}
+{% block canonical %}{{ site_url }}/events/{% endblock %}
+
+{% macro card(e, past=False) %}
+<a class="ev-card{% if past %} is-past{% endif %}" href="{{ e.url }}">
+  <div class="listing-art" aria-hidden="true">
+    <div class="listing-orbit orbit-one"></div><div class="listing-orbit orbit-two"></div>
+    <div class="listing-core"><svg viewBox="0 0 64 64" fill="none"><path d="m25 20-13 12 13 12m14-24 13 12-13 12m-3-29-8 34" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <span class="listing-node node-one"></span><span class="listing-node node-two"></span>
+    <span class="listing-art-label">CODE VIBE / SESSIONS</span>
+  </div>
+  <div class="listing-content">
+    <div class="listing-meta"><span class="listing-tag">#{{ e.hashtag }}</span><span class="listing-date">{{ e.short_label }}</span></div>
+    <h3>{{ e.title }}</h3>
+    <p>{{ e.subtitle }}</p>
+    <span class="ev-more">{{ "Запись и материалы" if past else "О мероприятии" }}</span>
+  </div>
+</a>
+{% endmacro %}
+
+{% block content %}
+<main class="ev events-listing">
+  <section class="ev-hero">
+    <p class="badge"><span class="dot"></span>Афиша</p>
+    <h1 class="ev-title">Мероприятия клуба</h1>
+    <p class="lead">Вебинары и встречи про вайб-кодинг: реальные кейсы, живые демо, без скучной теории.</p>
+  </section>
+
+  <section class="ev-section">
+    <div class="listing-section-head"><h2>Ближайшие</h2><span>В расписании: {{ upcoming|length }}</span></div>
+    {% if upcoming %}
+    <div class="ev-grid">{% for e in upcoming %}{{ card(e) }}{% endfor %}</div>
+    {% else %}
+    <p class="empty">Новых мероприятий пока нет. Следите за анонсами в <a href="https://t.me/codvbs">Telegram</a>.</p>
+    {% endif %}
+  </section>
+
+  {% if past %}
+  <section class="ev-section">
+    <h2>Прошедшие</h2>
+    <div class="ev-grid">{% for e in past %}{{ card(e, True) }}{% endfor %}</div>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

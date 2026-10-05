@@ -23,6 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/landing/landing.css">
+  <link rel="stylesheet" href="/static/ui.css?v=cookie-banner-1">
 
   <script type="application/ld+json">
   {
@@ -38,8 +39,8 @@
   <!-- Интерактив только для лендинга: модули из static/landing/ работают лишь при <body data-landing>. -->
   <script src="/static/landing/magnets.js" defer></script>
   <script src="/static/landing/paint.js" defer></script>
-  <script src="/static/landing/fire.js" defer></script>
   <script src="/static/landing/live.js" defer></script>
+  <script src="/analytics.js" defer></script>
 </head>
 <body data-landing>
   <div class="grid-bg" aria-hidden="true"></div>
@@ -51,10 +52,10 @@
       <span class="sheen"></span>
     </a>
     <div class="actions">
-      <a class="btn btn-primary" data-swap="buttons" href="#telegram"><span class="radio-waves" aria-hidden="true"><i></i><i></i><i></i></span>Вступить в клуб
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+      <a class="btn btn-primary" data-swap="buttons" href="https://t.me/codevbrs"><span class="radio-waves" aria-hidden="true"><i></i><i></i><i></i></span>Вступить в клуб
+<span class="join-icon" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24"><path fill="currentColor" d="M21.5 3.5 18 20c-.3 1.2-1 1.5-2 .9l-5.4-4-2.6 2.5c-.3.3-.5.5-1 .5l.4-5.5L17.5 5c.5-.4-.1-.6-.7-.2L4.3 12.7.9 11.6c-1.1-.3-1.1-1.1.2-1.6L20 2.7c.9-.3 1.7.2 1.5.8Z"/></svg></span>
       </a>
-      <a class="btn btn-ghost" data-swap="buttons" href="#telegram"><span class="flames" aria-hidden="true"><i style="--n:0"></i><i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i><i style="--n:4"></i><i style="--n:5"></i><i style="--n:6"></i><i style="--n:7"></i><i style="--n:8"></i></span>Мероприятия клуба</a>
+      <a class="btn btn-primary" data-swap="buttons" href="/events/"><span class="radio-waves" aria-hidden="true"><i></i><i></i><i></i></span>Мероприятия</a>
     </div>
 
   </header>
@@ -75,6 +76,11 @@
   </main>
 
 
+
+  <footer class="foot">
+    <span>© Code Vibe</span>
+    <nav class="community-links" aria-label="Сообщество"><a href="https://t.me/codvbs" target="_blank" rel="noopener">Канал <b>@codvbs</b></a><a href="https://t.me/codevbrs" target="_blank" rel="noopener">Группа <b>@codevbrs</b></a><a href="#cookies" data-cookie-settings hidden>Cookies</a></nav>
+  </footer>
 
   <div class="toast" role="status" aria-live="polite"></div>
 </body>
