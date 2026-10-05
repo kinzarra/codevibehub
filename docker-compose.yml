@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env  # на сервере: /opt/codevibehub/.env с POSTGRES_DSN
+    ports:
+      - "8080:8000"
+    networks:
+      - default
+      - pg
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  # Сеть Postgres-контейнера irm-db-1 (проект irm); хост БД внутри сети — irm-db-1
+  pg:
+    external: true
+    name: irm_internal
