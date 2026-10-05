@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py db.py live.py events.py auth.py editor.py gcal.py models.py security.py storage.py web.py ./
+COPY main.py db.py live.py events.py auth.py editor.py gcal.py models.py notify.py security.py storage.py web.py ./
 COPY static ./static
 COPY templates ./templates
 COPY events ./events
