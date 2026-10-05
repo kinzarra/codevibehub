@@ -1,0 +1,46 @@
+/* Общие кнопки и подвал сайта */
+body .btn, body .top .pill, body .speaker .links a {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  position: relative; isolation: isolate; min-height: 54px; padding: 0 22px;
+  border: 1px solid #FFFFFF25; border-radius: 18px;
+  font: 700 15px/1 'Manrope', sans-serif; letter-spacing: -.025em;
+  text-decoration: none; color: #E9F3FF; cursor: pointer;
+  background: linear-gradient(145deg, #1A202CCC, #10121BD9);
+  box-shadow: inset 0 1px 0 #FFFFFF18;
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+body .btn-primary { color: #0A1220; border-color: #FFFFFF30; background: linear-gradient(110deg, var(--a), #98A8FF, var(--b), var(--a)); background-size: 300% 100%; animation: button-flow 8s ease infinite; }
+body .btn:active, body .top .pill:active { transform: scale(.97); }
+@media (hover: hover) {
+  body .btn:hover, body .top .pill:hover, body .speaker .links a:hover { transform: translateY(-3px); border-color: #67E8F970; box-shadow: 0 8px 28px #67E8F925; }
+  body .btn-primary:hover { box-shadow: 0 0 28px #67E8F950, 0 0 50px #C084FC25; }
+}
+body .top .actions { align-items: center; }
+body .foot { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px var(--pad); margin-top: 32px; border-top: 1px solid #FFFFFF12; background: linear-gradient(110deg, #10162290, #14112080); font: 12px 'Manrope', sans-serif; color: #A8B1C5; }
+.community-links { display: flex; flex-wrap: wrap; gap: 24px; }
+.community-links a { color: #B7BED1; text-decoration: none; transition: color .25s; }
+.community-links b { color: #E0EEFF; }
+.community-links a:hover { color: var(--a); }
+@media (max-width: 760px) { body .btn, body .top .pill, body .speaker .links a { min-height: 48px; padding: 0 18px; font-size: 14px; } body .foot { flex-wrap: wrap; } }
+.join-icon { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; margin-right: -8px; border-radius: 10px; border: 1px solid #FFFFFF45; background: #FFFFFF28; box-shadow: inset 0 1px 0 #FFFFFF40; overflow: hidden; }
+.join-icon svg { transition: transform .3s ease; }
+@media (hover: hover) { .btn-primary:hover .join-icon svg { animation: join-flight .65s ease both; } }
+@keyframes join-flight { 0% { transform: translate(0,0); } 45% { transform: translate(22px,-22px); } 46% { transform: translate(-22px,22px); } 100% { transform: translate(0,0); } }
+
+/* Подвал прижат к нижнему краю коротких страниц. */
+html body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+body > header, body > main, body > footer { flex-shrink: 0; }
+body > footer.foot { margin-top: auto; }
+
+/* Баннер согласия на cookies (static/analytics.js) */
+.cookie-banner {
+  position: fixed; z-index: 1000; left: 16px; right: 16px; bottom: 16px; max-width: 560px; margin-left: auto;
+  display: flex; flex-direction: column; gap: 14px; padding: 18px 20px;
+  border: 1px solid #FFFFFF25; border-radius: 18px; background: #10121BF2; color: #E9F3FF;
+  box-shadow: 0 12px 40px #00000080; backdrop-filter: blur(10px);
+  font: 500 14px/1.5 'Manrope', sans-serif;
+}
+.cookie-banner p { margin: 0; }
+.cookie-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+body .cookie-actions .btn { min-height: 44px; padding: 0 18px; font-size: 14px; }
+@media (max-width: 480px) { .cookie-actions .btn { flex: 1; } }

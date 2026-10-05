@@ -27,6 +27,7 @@ log = logging.getLogger("codevibehub.live")
 router = APIRouter()
 
 MAX_PEERS = 300
+MAX_PEERS_PER_IP = 8  # вкладки одного человека; не даём одному IP занять все места
 MAX_MESSAGE = 4096  # байт
 MAX_POINTS = 64  # точек в одном куске следа
 RATE = 60  # событий в секунду на соединение (с запасом на всплеск ×2)
@@ -42,6 +43,7 @@ COLORS = ["#67E8F9", "#C084FC", "#D4FF3A", "#3AFFB4", "#FF8A4C", "#FF3DA5", "#FA
 @dataclass(eq=False)
 class Peer:
     ws: WebSocket
+    ip: str
     id: str
     name: str
     color: str
@@ -126,12 +128,13 @@ async def _pump(peer: Peer) -> None:
 @router.websocket("/ws/live")
 async def live(ws: WebSocket):
     await ws.accept()
-    if len(peers) >= MAX_PEERS:
+    ip = ws.client.host if ws.client else ""
+    if len(peers) >= MAX_PEERS or sum(p.ip == ip for p in peers.values()) >= MAX_PEERS_PER_IP:
         await ws.close(code=1013)  # try again later
         return
 
     pid = f"{random.getrandbits(32):08x}"
-    peer = Peer(ws, pid, f"{random.choice(ADJ)}-{random.choice(ANIMALS)}", random.choice(COLORS))
+    peer = Peer(ws, ip, pid, f"{random.choice(ADJ)}-{random.choice(ANIMALS)}", random.choice(COLORS))
     now = time.monotonic()
     while cuts and now - cuts[0][0] > CUT_TTL:
         cuts.popleft()

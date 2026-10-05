@@ -65,6 +65,44 @@ rsync в `/opt/codevibehub` + `docker compose -p codevibehub up -d --build`.
    - When: `Hostname` equals `codevibehub.org` (и `www.codevibehub.org`, если добавлен)
    - Then: Destination Port → **Rewrite to 8080**
 
+## Мероприятия и их создание
+
+- Страницы: `/events/` (афиша), `/events/<slug>` (мероприятие). Данные в Postgres (`events`, `event_rsvps`,
+  `event_calendar_clicks`, см. `models.py`); `events/*.json` лишь засевают самую первую пустую БД.
+- Создание и правка: `/events/new`, `/events/<slug>/edit`, список своих и счётчики — `/my/events`, вход — `/login`
+  (Google). Код: `auth.py` (вход и права), `editor.py` (формы), `gcal.py` (поиск даты по ссылке Meet),
+  `static/editor/` (JS-редактор со стикерами, drag & drop фото в S3).
+- Посетители: вход через Google для всех (таблица `users`). Вошедший отмечает «это я» в «Для кого»
+  (`event_audience_picks`) и лайкает пункты программы (`event_agenda_likes`); у пунктов стабильные `id`, правка текста
+  отметки не сбрасывает. Кто что отметил — `/events/<slug>/insights` (только организаторам).
+- Роли: **администратор** (`ADMIN_EMAILS`: создаёт, правит, удаляет, смотрит всё), **владелец** (создал мероприятие, пока он
+  администратор), **соавтор** (владелец вписывает его Google-почту на странице правки: соавтор правит содержимое и видит
+  отметки, но не удаляет мероприятие, не создаёт новые и не меняет список соавторов). Gmail сравнивается без точек и «+метки»
+  (`auth.norm_email`). Доступ соавтора отзывается сразу, правки списка пишутся в `codevibehub.audit`.
+- Права на создание: сейчас только email из `ADMIN_EMAILS` (через запятую). Правила в двух функциях `auth.can_create` и
+  `auth.can_edit`; у каждого мероприятия есть `owner_email`, так что открыть создание всем можно, поменяв только их.
+- Переменные (локальный и серверный `.env`): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`,
+  `SESSION_SECRET`, `PUBLIC_BASE_URL` (`https://codevibehub.org`; локально `http://localhost:8000`), `S3_*`.
+- Google Cloud Console → Credentials → OAuth client (Web). Redirect URI: `https://codevibehub.org/auth/callback` и
+  `http://localhost:8000/auth/callback`. Для кнопки «Подтянуть дату» включите ещё Google Calendar API.
+- Схема БД создаётся `create_all` и сама не меняется: при изменении моделей нужны ручной SQL или миграции (Alembic).
+
+## Безопасность
+
+- **Права проверяет сервер, а не интерфейс.** Кнопка «Редактировать» выводится в HTML только тем, у кого есть право
+  (`auth.can_edit`), но настоящая защита стоит на маршрутах `/events/new`, `/events/<slug>/edit|delete|insights`,
+  `/my/events` (`require_creator`). Права перечитываются из `ADMIN_EMAILS` на каждый запрос: убрали email из списка,
+  и действующая сессия сразу теряет доступ.
+- Вход: Google OIDC, только подтверждённый email, сессия пересоздаётся после входа, живёт сутки, cookie `HttpOnly`,
+  `SameSite=Lax`, на https имя `__Host-session`. Без `SESSION_SECRET` длиной от 32 символов вход выключен.
+- Все POST-формы и API отметок защищены CSRF-токеном (форма или заголовок `X-CSRF`); `next` после входа и выхода
+  принимает только пути своего сайта.
+- Токен доступа к Google Calendar хранится только в памяти сервера (воркер один), не в cookie.
+- `security.py`: `nosniff`, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, Referrer/Permissions-Policy, HSTS на https,
+  строгий CSP (`script-src 'self'`) на страницах входа и редактирования, лимит запроса 16 МБ.
+- Шаблоны экранируют HTML, ссылки принимаются только http(s), фото проверяются по содержимому (JPG/PNG/WebP, до 5 МБ).
+- Создание, правка и удаление пишутся в лог `codevibehub.audit` (кто и какое мероприятие).
+
 ## Форма регистрации (TODO)
 
 Форма пока не реализована — оставлена заглушка:

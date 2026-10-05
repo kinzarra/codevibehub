@@ -1,0 +1,101 @@
+{% extends "editor_base.html" %}
+{% block page_title %}{{ "Новое мероприятие" if creating else "Редактирование" }}{% endblock %}
+
+{% macro field(name, label, hint="", type="text", required=False, prefix="") %}
+<label class="ed-f">
+  <span>{{ label }}{% if required %} *{% endif %}</span>
+  {% if prefix %}<span class="ed-prefixed"><i>{{ prefix }}</i>{% endif %}
+  <input type="{{ type }}" name="{{ name }}" value="{{ initial[name] }}" {% if required %}required{% endif %}>
+  {% if prefix %}</span>{% endif %}
+  {% if hint %}<small>{{ hint }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+{% block content %}
+<main class="ev ed-narrow">
+  <section class="ev-hero">
+    <p class="badge"><span class="dot"></span>{{ "Новое мероприятие" if creating else "Редактирование" }}</p>
+    <h1 class="ev-title">{{ "Создать мероприятие" if creating else event.title }}</h1>
+  </section>
+
+  {% if errors %}<div class="ed-error"><b>Исправьте:</b><ul>{% for er in errors %}<li>{{ er }}</li>{% endfor %}</ul></div>{% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="ed-form" id="event-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="payload" id="payload">
+    <script type="application/json" id="initial">{{ initial | tojson }}</script>
+
+    <fieldset><legend>Основное</legend>
+      {% if creating %}
+        {{ field("slug", "Адрес страницы", "Латиница, цифры, дефис. Станет ссылкой /events/адрес и потом не меняется.", required=True) }}
+      {% else %}
+        <div class="ed-address"><div><span>Ссылка на мероприятие</span><code data-event-path="/events/{{ event.slug }}">/events/{{ event.slug }}</code></div><button type="button" class="btn-mini" data-copy-address>Скопировать</button><small data-copy-status role="status"></small></div>
+      {% endif %}
+      {{ field("title", "Название", "Крупный заголовок страницы", required=True) }}
+      <label class="ed-f"><span>Подзаголовок *</span><textarea name="subtitle" rows="3" required>{{ initial.subtitle }}</textarea><small>1–3 предложения под заголовком</small></label>
+      <label class="ed-f"><span>Описание для поиска и соцсетей *</span><textarea name="description" rows="2" required>{{ initial.description }}</textarea><small>До 400 символов: сниппет Google и превью ссылки</small></label>
+      <div class="ed-f"><span>Стикеры мероприятия</span><input type="hidden" name="hashtag" value="{{ initial.hashtag }}"><div class="ed-tags" id="event-tags"></div><div class="tag-compose"><input id="tag-input" aria-label="Новый стикер" placeholder="Например: воркшоп" maxlength="30"><button type="button" class="btn-mini" id="tag-add">Добавить</button></div><div class="tag-suggestions"><button type="button" data-tag="вебинар">+ вебинар</button><button type="button" data-tag="встреча">+ встреча</button><button type="button" data-tag="воркшоп">+ воркшоп</button></div><small id="tag-status" role="status">Enter добавляет стикер. Общая длина — до 40 символов.</small></div>
+    </fieldset>
+
+    <fieldset class="ed-schedule"><legend>Время и место</legend><div class="schedule-summary" id="schedule-summary" aria-live="polite"></div>
+      <label class="ed-f"><span>Ссылка на звонок *</span>
+        <span class="meet-input"><input type="url" name="meet_url" value="{{ initial.meet_url }}" placeholder="https://meet.google.com/abc-defg-hij" required><button type="button" class="copy-meet" aria-label="Скопировать ссылку на звонок"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M15 4H7a3 3 0 0 0-3 3v8"/></svg></button></span><small id="meet-copy-status" role="status"></small>
+        <small>Вставьте ссылку Google Meet и нажмите кнопку: дату и время найдём в вашем Google Calendar.</small>
+      </label>
+      {% if can_create %}<div class="ed-lookup"><button type="button" class="btn-mini" id="meet-lookup">Подтянуть дату из Google Calendar</button><span id="meet-status" role="status"></span></div>{% endif %}
+      <div class="ed-grid">
+        {{ field("start", "Начало", type="datetime-local", required=True) }}
+        {{ field("end", "Конец", type="datetime-local", required=True) }}
+      </div>
+<div class="duration-options"><span>Длительность</span><button type="button" data-duration="30">30 мин</button><button type="button" data-duration="60">1 час</button><button type="button" data-duration="90">1,5 часа</button><button type="button" data-duration="120">2 часа</button></div>
+      <div class="ed-grid">
+        {{ field("timezone", "Часовой пояс", "Время выше указано в нём: Asia/Nicosia, Europe/Moscow…", required=True) }}
+        {{ field("tz_label", "Как показать пояс", "Подпись у времени: «Кипр / МСК»") }}
+      </div>
+<datalist id="timezone-options"><option value="Asia/Nicosia">Кипр</option><option value="Europe/Moscow">Москва</option><option value="Europe/London">Лондон</option><option value="Europe/Berlin">Берлин</option><option value="Asia/Dubai">Дубай</option><option value="UTC">UTC</option></datalist>
+      {{ field("format", "Формат") }}
+    </fieldset>
+
+    <fieldset><legend>Цифры</legend>
+      <p class="ed-hint">Крупные цифры под заголовком, например «138 · проектов ведёт один человек». До 8 штук.</p>
+      <div id="stats" class="stat-cards"></div>
+      <button type="button" class="btn-mini" data-add="stat">+ Добавить цифру</button>
+    </fieldset>
+
+    <fieldset><legend>Программа</legend>
+      <div id="agenda" class="agenda-cards"></div>
+      <button type="button" class="btn-mini" data-add="agenda">+ Добавить пункт</button>
+    </fieldset>
+
+    <fieldset><legend>Для кого</legend>
+      <p class="ed-hint">Напишите и нажмите Enter, каждая аудитория станет стикером.</p>
+      <div id="audience" class="chips"></div>
+    </fieldset>
+
+    <fieldset><legend>Ссылки мероприятия</legend>
+      <p class="ed-hint">Каналы, чаты, материалы: покажутся кнопками внизу страницы. Можно вставить только ссылку, название подберётся само.</p>
+      <div id="links"></div>
+    </fieldset>
+
+    {% if manage_coauthors %}
+    <fieldset><legend>Соавторы</legend>
+      <p class="ed-hint">Укажите Google-почту (Gmail) и нажмите Enter. Соавтор после входа через Google сможет <b>править это мероприятие и смотреть отметки посетителей</b>. Удалять мероприятие и менять список соавторов он не сможет. Адреса Gmail сравниваются без точек и «+метки»: <i>john.doe@gmail.com</i> и <i>johndoe@gmail.com</i> это один аккаунт.</p>
+      <div id="coauthors" class="chips"></div>
+    </fieldset>
+    {% else %}
+    <p class="ed-hint">Вы соавтор этого мероприятия: можете править его и смотреть отметки. Список соавторов и удаление доступны владельцу.</p>
+    {% endif %}
+
+    <fieldset><legend>Спикеры</legend>
+      <div id="speakers" class="speaker-cards"></div>
+      <button type="button" class="btn-mini" data-add="speaker">+ Добавить спикера</button>
+    </fieldset>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">{{ "Создать" if creating else "Сохранить" }}</button>
+      <a class="btn btn-ghost" href="/my/events">Отмена</a>
+    </div>
+  </form>
+  <script src="/static/editor/editor.js" defer></script>
+</main>
+{% endblock %}

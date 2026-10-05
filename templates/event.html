@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ e.title }} — Code Vibe{% endblock %}
+{% block description %}{{ e.description }}{% endblock %}
+{% block canonical %}{{ e.abs_url }}{% endblock %}
+{% block head %}
+  <script src="/static/events/event.js" defer></script>
+  <script type="application/ld+json">
+  {{ {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": e.title,
+    "description": e.description,
+    "startDate": e.start,
+    "endDate": e.end,
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+    "location": {"@type": "VirtualLocation", "url": e.meet_url},
+    "image": site_url ~ (e.speakers[0].photo_url if e.speakers and e.speakers[0].photo_url else "/static/ico.jpg"),
+    "url": e.abs_url,
+    "isAccessibleForFree": true,
+    "organizer": {"@type": "Organization", "name": "Code Vibe", "url": site_url ~ "/"},
+    "performer": e.performers
+  } | tojson }}
+  </script>
+{% endblock %}
+
+{% block content %}
+<main class="ev ev-detail" data-start="{{ e.start }}" data-end="{{ e.end }}" data-authed="{{ 1 if user else 0 }}" data-login="/login?next={{ (e.url ~ '#picks') | urlencode }}" data-csrf="{{ csrf }}">
+  {% if can_edit_event %}
+  <aside class="org-bar" aria-label="Панель организатора">
+    <span class="org-who">{{ "Вы организатор" if org_role == "owner" else "Вы соавтор" }}</span>
+    <a class="org-edit" href="{{ e.url }}/edit" rel="nofollow">✎ Редактировать</a>
+    <a href="{{ e.url }}/insights" rel="nofollow">Отметки посетителей</a>
+  </aside>
+  {% endif %}
+  <section class="ev-hero">
+    <p class="badge">{% for tag in e.hashtag.split(",") if tag %}<span class="ev-tag">#{{ tag }}</span>{% endfor %}<span class="ev-format"><span class="dot"></span>{{ e.format }}</span></p>
+    <h1 class="ev-title">{{ e.title }}</h1>
+    <p class="lead">{{ e.subtitle }}</p>
+
+    <div class="ev-when">
+      <div>
+        <span class="ev-label">Когда</span>
+        <strong>{{ e.date_label }}</strong>
+        <span>{{ e.time_label }} · {{ e.tz_label }}</span>
+        <span class="ev-local" hidden>У вас: <time></time></span>
+      </div>
+      <div>
+        <span class="ev-label">До начала</span>
+        <strong class="ev-countdown" aria-live="off">—</strong>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ e.meet_url }}" target="_blank" rel="noopener">Зайти в Meet
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+      </a>
+      <button class="btn btn-ghost rsvp" type="button" data-rsvp="{{ e.url | replace('/events/', '/api/events/') }}/rsvp" aria-pressed="{{ 'true' if e.going else 'false' }}">
+        <span class="rsvp-off">Я пойду</span><span class="rsvp-on">✓ Вы идёте</span>
+      </button>
+      <a class="btn btn-ghost" href="{{ e.url }}/calendar/google" target="_blank" rel="nofollow noopener">В Google Calendar</a>
+      <a class="btn btn-ghost" href="{{ e.url }}/calendar.ics" rel="nofollow">Скачать .ics</a>
+    </div>
+    <p class="going" {% if not e.going_count %}hidden{% endif %}><span class="going-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2"/></svg></span><span class="going-copy"><b data-going-count>{{ e.going_count }}</b> <span data-going-word></span></span><span class="going-signal" aria-hidden="true"></span></p>
+  </section>
+
+  {% if e.stats %}<section class="ev-stats" aria-label="Цифры">
+    {% for s in e.stats %}
+    <div class="stat" style="--order: {{ loop.index0 }}"><b>{{ s.value }}</b><span>{{ s.label }}</span></div>
+    {% endfor %}
+  </section>{% endif %}
+
+  {% if e.agenda %}<section class="ev-section" id="agenda">
+    <h2>Что разберём</h2>
+    {% if login_enabled %}<p class="pick-hint">{% if user %}Поставьте ♥ тому, что вам интереснее всего: мы учтём это в программе.{% else %}Хотите повлиять на программу? <a href="/login?next={{ (e.url ~ '#agenda') | urlencode }}">Войдите через Google</a> и отметьте, что вам интересно.{% endif %}</p>{% endif %}
+    <ol class="agenda">
+      {% for a in e.agenda %}
+      <li>
+        <h3>{{ a.title }}</h3>{% if a.text %}<p>{{ a.text }}</p>{% endif %}
+        {% if login_enabled %}<button type="button" class="like{% if a.liked %} on{% endif %}" data-kind="agenda" data-id="{{ a.id }}" aria-pressed="{{ 'true' if a.liked else 'false' }}" aria-label="Мне интересно: {{ a.title }}"><svg class="heart" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span class="like-n">{{ a.count if a.count else '' }}</span></button>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>{% endif %}
+
+  {% if e.audience %}<section class="ev-section ev-audience">
+    <div class="audience-art" aria-hidden="true">
+      <svg viewBox="0 0 320 260" fill="none">
+        <defs><linearGradient id="team-glass" x2="1" y2="1"><stop stop-color="#67E8F9"/><stop offset="1" stop-color="#C084FC"/></linearGradient></defs>
+        <ellipse cx="160" cy="136" rx="128" ry="84" stroke="url(#team-glass)" stroke-opacity=".3"/>
+        <ellipse cx="160" cy="136" rx="95" ry="115" stroke="url(#team-glass)" stroke-opacity=".15" transform="rotate(50 160 136)"/>
+        <path d="M160 125L62 76M160 125L258 76M160 125L160 225" stroke="url(#team-glass)" stroke-width="2" stroke-dasharray="4 7" class="art-links"/>
+        <g stroke="url(#team-glass)" fill="#151B2D" stroke-width="1.5">
+          <rect x="119" y="85" width="82" height="82" rx="24"/>
+          <circle cx="62" cy="66" r="29"/><circle cx="258" cy="66" r="29"/><circle cx="160" cy="220" r="29"/>
+        </g>
+        <g stroke="#CFF9FF" stroke-width="2" stroke-linecap="round">
+          <circle cx="62" cy="60" r="7"/><path d="M49 78c0-13 26-13 26 0"/>
+          <circle cx="258" cy="60" r="7"/><path d="M245 78c0-13 26-13 26 0"/>
+          <circle cx="160" cy="214" r="7"/><path d="M147 232c0-13 26-13 26 0"/>
+          <path d="M160 104l6 16 16 6-16 6-6 16-6-16-16-6 16-6z" fill="url(#team-glass)"/>
+        </g>
+        <circle r="3" fill="#67E8F9"><animateMotion dur="3s" repeatCount="indefinite" path="M62 76L160 125L258 76"/></circle>
+      </svg>
+    </div>
+    <div class="audience-copy" id="picks"><h2>Для кого</h2>
+    {% if login_enabled %}<p class="pick-hint">{% if user %}Нажмите на то, что про вас: так мы поймём, кто придёт.{% else %}Узнали себя? <a href="/login?next={{ (e.url ~ '#picks') | urlencode }}">Войдите через Google</a> и отметьте, что это про вас.{% endif %}</p>{% endif %}
+    <ul class="pills{% if login_enabled %} pick{% endif %}">
+      {% for a in e.audience %}
+      <li>{% if login_enabled %}<button type="button" class="pill-btn{% if a.mine %} on{% endif %}" data-kind="audience" data-id="{{ a.id }}" aria-pressed="{{ 'true' if a.mine else 'false' }}"><span class="pb-text">{{ a.text }}</span><span class="pb-count"{% if not a.count %} hidden{% endif %}>{{ a.count }}</span><span class="pb-me" aria-hidden="true">это я</span></button>{% else %}{{ a.text }}{% endif %}</li>
+      {% endfor %}
+    </ul></div>
+  </section>{% endif %}
+
+  {% if e.speakers %}<section class="ev-section">
+    <h2>{{ "Спикер" if e.speakers|length == 1 else "Спикеры" }}</h2>
+    <div class="speakers">
+      {% for sp in e.speakers %}
+      <article class="speaker">
+        <div class="speaker-portrait">
+          <span class="portrait-placeholder" aria-hidden="true"><svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="40" cy="27" r="13"/><path d="M15 68c0-30 50-30 50 0"/></svg></span>
+          {% if sp.photo_url %}<img class="avatar" src="{{ sp.photo_url }}" alt="{{ sp.name }}" width="240" height="280" loading="lazy" onerror="this.remove()">{% endif %}
+        </div>
+        <div class="speaker-info">
+        <h3>{{ sp.name }}</h3>
+        {% if sp.role %}<p class="role">{{ sp.role }}</p>{% endif %}
+        {% if sp.bio %}<p>{{ sp.bio }}</p>{% endif %}
+        {% if sp.links %}<p class="links">{% for l in sp.links %}<a href="{{ l.url }}" target="_blank" rel="noopener"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true">{% if 't.me/' in l.url %}<path fill="currentColor" d="M21.5 3.5 18 20c-.3 1.2-1 1.5-2 .9l-5.4-4-2.6 2.5c-.3.3-.5.5-1 .5l.4-5.5L17.5 5c.5-.4-.1-.6-.7-.2L4.3 12.7.9 11.6c-1.1-.3-1.1-1.1.2-1.6L20 2.7c.9-.3 1.7.2 1.5.8Z"/>{% else %}<g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 7h14M5 17h14"/></g>{% endif %}</svg>{{ l.label }}</a>{% endfor %}</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>{% endif %}
+
+  <section class="ev-cta">
+    <h2>Встречаемся {{ e.short_label }}</h2>
+    <p>{{ e.tz_label }}. Вход по ссылке, регистрация не нужна. </p>
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ e.meet_url }}" target="_blank" rel="noopener">Зайти в Meet</a>
+      {% for l in e.links %}<a class="btn btn-ghost" href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }}</a>{% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}

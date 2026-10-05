@@ -1,0 +1,33 @@
+{% extends "editor_base.html" %}
+{% block page_title %}Отметки{% endblock %}
+
+{% macro block(title, items, empty_hint) %}
+<section class="ev-section">
+  <h2>{{ title }}</h2>
+  {% if items %}
+  <div class="ins-list">
+    {% for it in items %}
+    <details class="ins-item">
+      <summary><span class="ins-text">{{ it.text }}</span><b class="ins-n">{{ it.users | length }}</b></summary>
+      {% if it.users %}<ul class="ins-users">{% for u in it.users %}<li>{{ u.name }} <small>{{ u.email }}</small></li>{% endfor %}</ul>
+      {% else %}<p class="ed-hint">{{ empty_hint }}</p>{% endif %}
+    </details>
+    {% endfor %}
+  </div>
+  {% else %}<p class="empty">В мероприятии нет таких пунктов.</p>{% endif %}
+</section>
+{% endmacro %}
+
+{% block content %}
+<main class="ev ed-narrow">
+  <section class="ev-hero">
+    <p class="badge"><span class="dot"></span>Отметки посетителей</p>
+    <h1 class="ev-title">{{ e.title }}</h1>
+    <p class="lead">Отметили хотя бы один пункт: {{ people }}. Раскройте пункт, чтобы увидеть кто.</p>
+    <div class="actions"><a class="btn btn-ghost" href="/my/events">← К списку</a></div>
+  </section>
+  {% if can_manage and e.coauthors %}<p class="ed-hint">Соавторы: {% for c in e.coauthors %}{{ c.email }}{% if not loop.last %}, {% endif %}{% endfor %}. Изменить список можно на странице правки.</p>{% endif %}
+  {{ block("Для кого: «это я»", audience, "Пока никто не отметил.") }}
+  {{ block("Что разберём: лайки", agenda, "Пока нет лайков.") }}
+</main>
+{% endblock %}
