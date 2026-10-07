@@ -52,14 +52,14 @@
     </div>
 
     <div class="actions">
-      <a class="btn btn-primary" href="{{ e.meet_url }}" target="_blank" rel="noopener">Зайти в Meet
+      <a class="btn btn-primary" href="{{ e.meet_url }}" target="_blank" rel="noopener"><span>Зайти в Meet</span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
       </a>
       <button class="btn btn-ghost rsvp" type="button" data-rsvp="{{ e.url | replace('/events/', '/api/events/') }}/rsvp" aria-pressed="{{ 'true' if e.going else 'false' }}">
         <span class="rsvp-off">Я пойду</span><span class="rsvp-on">✓ Вы идёте</span>
       </button>
-      <a class="btn btn-ghost" href="{{ e.url }}/calendar/google" target="_blank" rel="nofollow noopener">В Google Calendar</a>
-      <a class="btn btn-ghost" href="{{ e.url }}/calendar.ics" rel="nofollow">Скачать .ics</a>
+      <a class="btn btn-ghost" href="{{ e.url }}/calendar/google" target="_blank" rel="nofollow noopener"><span>В Google Calendar</span></a>
+      <a class="btn btn-ghost" href="{{ e.url }}/calendar.ics" rel="nofollow"><span>Скачать .ics</span></a>
     </div>
     <p class="going" {% if not e.going_count %}hidden{% endif %}><span class="going-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2"/></svg></span><span class="going-copy"><b data-going-count>{{ e.going_count }}</b> <span data-going-word></span></span><span class="going-signal" aria-hidden="true"></span></p>
   </section>
@@ -136,7 +136,7 @@
     <h2>Встречаемся {{ e.short_label }}</h2>
     <p>{{ e.tz_label }}. Вход по ссылке, регистрация не нужна. </p>
     <div class="actions">
-      <a class="btn btn-primary" href="{{ e.meet_url }}" target="_blank" rel="noopener">Зайти в Meet</a>
+      <a class="btn btn-primary" href="{{ e.meet_url }}" target="_blank" rel="noopener"><span>Зайти в Meet</span></a>
       {% for l in e.links %}<a class="btn btn-ghost" href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }}</a>{% endfor %}
     </div>
   </section>

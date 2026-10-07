@@ -44,3 +44,10 @@ body > footer.foot { margin-top: auto; }
 .cookie-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 body .cookie-actions .btn { min-height: 44px; padding: 0 18px; font-size: 14px; }
 @media (max-width: 480px) { .cookie-actions .btn { flex: 1; } }
+
+/* Простой фон кнопок без анимированных слоёв: совместимость с мобильными WebView. */
+body .btn { isolation: auto; animation: none; -webkit-text-fill-color: currentColor; }
+body .btn::before, body .btn::after, body .btn .radio-waves { display: none !important; animation: none !important; }
+body .btn > span, body .btn > svg { position: relative; z-index: 1; }
+body .btn-primary { background: linear-gradient(110deg, #67E8F9, #A998FA); animation: none; color: #0A1220; }
+body .btn-ghost { animation: none; color: #E9F3FF; }
