@@ -1,7 +1,7 @@
 """Создание и правка мероприятий: /my/events, /events/new, /events/<slug>/edit.
 
 Форма — JS-редактор со «стикерами» (static/editor/editor.js): простые поля приходят обычными полями формы,
-цифры, программа, «для кого», ссылки и спикеры — одним JSON в поле payload, фото спикеров — файлами photo_<id>.
+цифры, программа, «для кого», ссылки, видео и спикеры — одним JSON в поле payload, фото спикеров — файлами photo_<id>.
 Права — в auth.py (can_create / can_edit).
 """
 import json
@@ -13,6 +13,7 @@ from typing import Annotated
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -45,10 +46,11 @@ from models import (
 )
 
 MAX_PHOTO = 5 * 1024 * 1024
-LIMITS = {"coauthors": 10, "stats": 8, "agenda": 12, "audience": 14, "links": 12, "speakers": 10, "speaker_links": 8}
+LIMITS = {"coauthors": 10, "stats": 8, "agenda": 12, "audience": 14, "links": 12, "speakers": 10, "speaker_links": 8, "videos": 20}
 RESERVED_SLUGS = {"new"}
 HASHTAG_RE = re.compile(r"^[\w-]{1,30}$")
 SID_RE = re.compile(r"^[0-9a-f]{8}$")
+YT_ID_RE = re.compile(r"^[\w-]{11}$", re.ASCII)  # id ролика YouTube; ссылку разбирает редактор, сюда приходит только id
 EMAIL_RE = re.compile(r"^[^@\s,;<>]{1,64}@[^@\s,;<>]{1,190}\.[^@\s,;<>]{2,}$")
 PLAIN = ("slug", "title", "subtitle", "description", "hashtag", "timezone", "start", "end", "tz_label", "format", "meet_url")
 DEFAULTS = {"hashtag": "вебинар", "timezone": "Asia/Nicosia", "tz_label": "Кипр / МСК", "format": "Онлайн · Google Meet"}
@@ -164,6 +166,15 @@ def _parse(form, creating: bool, existing: Event | None, actor: str) -> tuple[di
         if text:
             audience.append({"id": _item_id(i.get("id"), seen), "text": text})
     links = _links(payload.get("links"), "Ссылки", LIMITS["links"], errors)
+    old_titles = {v.get("id"): v.get("title", "") for v in (existing.videos if existing else [])}
+    videos, seen = [], set()
+    for i in _dicts(payload.get("videos"))[:LIMITS["videos"]]:
+        vid = i.get("id")
+        if not (isinstance(vid, str) and YT_ID_RE.match(vid)):
+            errors.append("Видео: не удалось распознать ссылку на YouTube")
+        elif vid not in seen:
+            seen.add(vid)
+            videos.append({"id": vid, "short": i.get("short") is True, "title": old_titles.get(vid) or _s(i.get("title"), 200)})
 
     old = {sp.get("id"): sp for sp in (existing.speakers if existing else [])}
     speakers, photos, seen = [], {}, set()
@@ -198,11 +209,31 @@ def _parse(form, creating: bool, existing: Event | None, actor: str) -> tuple[di
     if len(coauthors) > LIMITS["coauthors"]:
         errors.append(f"Соавторов не больше {LIMITS['coauthors']}")
 
-    data.update(stats=stats, agenda=agenda, audience=audience, links=links, speakers=speakers, coauthors=coauthors)
-    initial = {**{k: raw[k] for k in PLAIN}, "stats": stats, "agenda": agenda, "audience": audience, "links": links,
+    data.update(stats=stats, agenda=agenda, audience=audience, links=links, videos=videos, speakers=speakers, coauthors=coauthors)
+    initial = {**{k: raw[k] for k in PLAIN}, "stats": stats, "agenda": agenda, "audience": audience, "links": links, "videos": videos,
                "coauthors": [c["email"] for c in coauthors],
                "speakers": [{**sp, "photo_url": speaker_photo_url(existing, sp) if existing else None} for sp in speakers]}
     return initial, data, photos, errors
+
+
+async def _video_titles(videos: list[dict]) -> list[str]:
+    """Подтягивает названия новых роликов через oEmbed YouTube (без ключа API). Возвращает предупреждения."""
+    missing = [v for v in videos if not v["title"]]
+    if not missing:
+        return []
+    warnings = []
+    async with httpx.AsyncClient(timeout=4) as client:
+        for v in missing:
+            try:
+                r = await client.get("https://www.youtube.com/oembed",
+                                     params={"url": f"https://www.youtube.com/watch?v={v['id']}", "format": "json"})
+            except httpx.HTTPError:
+                continue  # YouTube не ответил: название подтянется при следующем сохранении
+            if r.status_code == 200:
+                v["title"] = _s(r.json().get("title"), 200)
+            elif r.status_code in (400, 401, 403, 404):
+                warnings.append(f"Видео {v['id']} недоступно на YouTube (приватное или удалено): проверьте ссылку.")
+    return warnings
 
 
 def _photo_type(data: bytes) -> tuple[str, str] | None:
@@ -247,7 +278,7 @@ def _initial_from_event(e: Event) -> dict:
         "timezone": e.timezone, "start": e.starts_at.astimezone(tz).strftime("%Y-%m-%dT%H:%M"),
         "end": e.ends_at.astimezone(tz).strftime("%Y-%m-%dT%H:%M"), "tz_label": e.tz_label, "format": e.format,
         "meet_url": e.meet_url, "stats": e.stats, "agenda": e.agenda, "audience": e.audience, "links": e.links,
-        "coauthors": [c["email"] for c in e.coauthors],
+        "videos": e.videos, "coauthors": [c["email"] for c in e.coauthors],
         "speakers": [{**sp, "photo_url": speaker_photo_url(e, sp)} for sp in e.speakers],
     }
 
@@ -305,7 +336,7 @@ async def create(request: Request, user: CreatorDep, session: SessionDep):
         errors.append("Мероприятие с таким адресом уже есть")
     if errors:
         return _form_page(request, initial, errors, True)
-    warnings = await _save_photos(data["slug"], data["speakers"], photos)
+    warnings = await _save_photos(data["slug"], data["speakers"], photos) + await _video_titles(data["videos"])
     session.add(Event(**data, owner_email=user["email"]))
     await session.commit()
     log.info("event created: slug=%s by=%s coauthors=%s", data["slug"], user["email"], [c["email"] for c in data["coauthors"]])
@@ -334,7 +365,7 @@ async def update(slug: str, request: Request, user: LoginDep, session: SessionDe
         errors = [e for e in errors if not e.startswith("Соавтор")]
     if errors:
         return _form_page(request, initial, errors, False, ev, manage_coauthors=manage)
-    warnings = await _save_photos(ev.slug, data["speakers"], photos)
+    warnings = await _save_photos(ev.slug, data["speakers"], photos) + await _video_titles(data["videos"])
     before = {c["email"] for c in ev.coauthors}
     for key, value in data.items():
         setattr(ev, key, value)

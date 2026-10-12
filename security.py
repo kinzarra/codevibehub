@@ -31,7 +31,7 @@ MAX_TRACKED_IPS = 50_000
 # Страницы входа и редактирования: на них никогда нет чужих скриптов, поэтому CSP строгий.
 STRICT_PATHS = re.compile(r"^/(login|no-access|my/|events/new$|events/[^/]+/(edit|insights)$)")
 _STRICT_CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-               "font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; "
+               "font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://i.ytimg.com; connect-src 'self'; "
                "frame-ancestors 'none'; base-uri 'self'; object-src 'none'")
 _BASE_CSP = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"  # публичные страницы: защита от кликджекинга
 _HEADERS = [

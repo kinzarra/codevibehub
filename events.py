@@ -86,7 +86,7 @@ def _view(ev: Event, going_count: int = 0, going: bool = False, votes: dict | No
     return {
         "id": ev.id, "slug": ev.slug, "hashtag": ev.hashtag, "title": ev.title, "subtitle": ev.subtitle,
         "description": ev.description, "tz_label": ev.tz_label, "format": ev.format, "meet_url": ev.meet_url,
-        "links": ev.links, "stats": ev.stats,
+        "links": ev.links, "stats": ev.stats, "videos": ev.videos or [],
         "agenda": [{**a, "count": votes.get("ag", {}).get(a["id"], 0), "liked": a["id"] in votes.get("ag_mine", ())} for a in ev.agenda],
         "audience": [{**a, "count": votes.get("aud", {}).get(a["id"], 0), "mine": a["id"] in votes.get("aud_mine", ())} for a in ev.audience],
         "speakers": [{**sp, "photo_url": speaker_photo_url(ev, sp)} for sp in ev.speakers],

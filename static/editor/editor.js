@@ -133,6 +133,82 @@
   }
   const getLinks = linksEditor($('#links'), initial.links);
 
+  // ---- видео YouTube: из ссылки берём id ролика; /shorts/ — вертикальный 9:16, остальные — 16:9 (можно переключить)
+  const ytParse = (raw) => {
+    let u; try { u = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw); } catch { return null; }
+    const host = u.hostname.replace(/^(www|m|music)\./, '');
+    const [, kind, rest] = u.pathname.split('/');
+    let id = null;
+    if (host === 'youtu.be') id = kind;
+    else if (host === 'youtube.com' || host === 'youtube-nocookie.com') id = kind === 'watch' ? u.searchParams.get('v') : ['shorts', 'embed', 'live', 'v'].includes(kind) ? rest : null;
+    return id && /^[\w-]{11}$/.test(id) ? { id, short: kind === 'shorts' } : null;
+  };
+  const getVideos = (() => {
+    const root = $('#videos'), LIMIT = 20;
+    const list = el('div', { class: 'vid-list' }), count = el('span', { class: 'link-count' });
+    const err = el('small', { class: 'ed-err', role: 'status' }), feedback = el('div', { class: 'stat-status', role: 'status' });
+    const input = el('input', { type: 'text', inputmode: 'url', placeholder: 'https://youtube.com/shorts/… или youtu.be/…', 'aria-label': 'Ссылка на YouTube' });
+    const update = () => {
+      count.textContent = `${list.children.length}/${LIMIT}`;
+      [...list.children].forEach((c, i) => { const b = c.querySelectorAll('.link-tools button'); b[0].disabled = i === 0; b[1].disabled = i === list.children.length - 1; });
+    };
+    const make = ({ id, short, title }) => {
+      const card = el('div', { class: 'vid-card', 'data-id': id, 'data-title': title || '' });
+      const kind = el('span', { class: 'vid-kind' });
+      const toggle = el('button', { type: 'button', onclick: () => setShort(card.dataset.short !== '1') });
+      const setShort = (v) => {
+        card.dataset.short = v ? '1' : '';
+        kind.textContent = v ? 'Shorts · 9:16' : 'Видео · 16:9';
+        toggle.textContent = v ? '⇄ 16:9' : '⇄ 9:16';
+        toggle.setAttribute('aria-label', v ? 'Показывать горизонтально' : 'Показывать вертикально');
+      };
+      setShort(short);
+      card.append(
+        el('a', { class: 'vid-thumb', href: `https://youtu.be/${id}`, target: '_blank', rel: 'noopener', 'aria-label': 'Открыть на YouTube' },
+          el('img', { src: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, alt: '', loading: 'lazy' })),
+        el('div', { class: 'link-info' }, el('b', { text: title || 'Название подтянется после сохранения', class: title ? '' : 'vid-pending' }), kind),
+        el('div', { class: 'link-tools' },
+          el('button', { type: 'button', text: '↑', 'aria-label': 'Видео выше', onclick: () => { if (card.previousElementSibling) list.insertBefore(card, card.previousElementSibling); update(); } }),
+          el('button', { type: 'button', text: '↓', 'aria-label': 'Видео ниже', onclick: () => { if (card.nextElementSibling) list.insertBefore(card.nextElementSibling, card); update(); } }),
+          toggle,
+          el('button', { type: 'button', text: '×', 'aria-label': 'Удалить видео', onclick: () => {
+            const next = card.nextElementSibling; card.remove(); update();
+            feedback.replaceChildren('Видео удалено ', el('button', { type: 'button', text: 'Отменить', onclick: () => {
+              if (list.children.length < LIMIT) { list.insertBefore(card, next?.parentNode === list ? next : null); feedback.replaceChildren(); update(); }
+            } }));
+          } })));
+      return card;
+    };
+    // Можно вставить сразу несколько ссылок (через пробел или с новой строки): добавятся все распознанные.
+    const add = () => {
+      const parts = input.value.split(/\s+/).filter(Boolean);
+      if (!parts.length) return true;
+      const bad = [];
+      for (const part of parts) {
+        const v = ytParse(part);
+        if (!v) { bad.push(part); continue; }
+        if ([...list.children].some((c) => c.dataset.id === v.id)) continue;
+        if (list.children.length >= LIMIT) { bad.push(part); err.textContent = `Можно добавить до ${LIMIT} видео`; continue; }
+        list.append(make(v));
+      }
+      input.value = bad.join(' ');
+      if (bad.length && !err.textContent) err.textContent = 'Это не похоже на ссылку YouTube: нужна вида youtube.com/watch?v=…, youtu.be/… или youtube.com/shorts/…';
+      if (!bad.length) err.textContent = '';
+      update();
+      return !bad.length;
+    };
+    input.addEventListener('input', () => { err.textContent = ''; });
+    input.addEventListener('paste', () => setTimeout(add));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    $('#event-form').addEventListener('submit', (e) => { if (!add()) { e.preventDefault(); e.stopImmediatePropagation(); input.focus(); } }, true);
+    (initial.videos || []).forEach((v) => list.append(make(v)));
+    root.append(el('div', { class: 'link-heading' }, el('span', { text: 'Видео на странице' }), count), list, feedback,
+      el('div', { class: 'link-compose' }, el('label', { class: 'stat-field' }, el('span', { text: 'Ссылка на YouTube или Shorts' }), input),
+        el('div', { class: 'link-actions' }, el('button', { type: 'button', class: 'btn-mini', text: 'Добавить видео', onclick: add }))), err);
+    update();
+    return () => [...list.children].map((c) => ({ id: c.dataset.id, short: c.dataset.short === '1', title: c.dataset.title }));
+  })();
+
   // ---- цифры
   const stats = $('#stats');
   let removedStat = null;
@@ -271,6 +347,7 @@
       coauthors: getCoauthors(),
       audience: [...audience.querySelectorAll('.chip')].map((c) => ({ id: c.dataset.id, text: c.dataset.value })),
       links: getLinks(),
+      videos: getVideos(),
       stats: [...stats.children].map((c) => ({ value: val(c, '.sc-value'), label: val(c, '.sc-label') })),
       agenda: [...agenda.children].map((c) => ({ id: c.dataset.id, title: val(c, '.ag-title'), text: val(c, '.ag-text') })),
       speakers: [...speakers.children].map((c) => ({

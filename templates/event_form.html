@@ -77,6 +77,11 @@
       <div id="links"></div>
     </fieldset>
 
+    <fieldset id="videos-block"><legend>Видео</legend>
+      <p class="ed-hint">Ролики YouTube и Shorts: на странице мероприятия их можно смотреть прямо внутри, листая ленту вверх-вниз. Вставьте ссылку, можно несколько сразу. Название подтянется из YouTube при сохранении.</p>
+      <div id="videos"></div>
+    </fieldset>
+
     {% if manage_coauthors %}
     <fieldset><legend>Соавторы</legend>
       <p class="ed-hint">Укажите Google-почту (Gmail) и нажмите Enter. Соавтор после входа через Google сможет <b>править это мероприятие и смотреть отметки посетителей</b>. Удалять мероприятие и менять список соавторов он не сможет. Адреса Gmail сравниваются без точек и «+метки»: <i>john.doe@gmail.com</i> и <i>johndoe@gmail.com</i> это один аккаунт.</p>
@@ -96,6 +101,6 @@
       <a class="btn btn-ghost" href="/my/events">Отмена</a>
     </div>
   </form>
-  <script src="/static/editor/editor.js" defer></script>
+  <script src="/static/editor/editor.js?v=videos-1" defer></script>
 </main>
 {% endblock %}
