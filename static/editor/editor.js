@@ -2,6 +2,13 @@
 // DOM — источник правды: при отправке всё собирается в JSON в поле payload; фото уходят файлами photo_<id спикера>.
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
+  // Превью YouTube: maxres, если его нет — hqdefault (YouTube отвечает 404 с заглушкой 120×90)
+  const ytThumb = (img, id) => {
+    const fallback = () => { if (!img.src.includes('/hqdefault.')) img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`; };
+    img.addEventListener('error', fallback);
+    img.addEventListener('load', () => { if (img.naturalWidth <= 120) fallback(); });
+    return img;
+  };
   const el = (tag, props = {}, ...kids) => {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(props)) {
@@ -165,7 +172,7 @@
       setShort(short);
       card.append(
         el('a', { class: 'vid-thumb', href: `https://youtu.be/${id}`, target: '_blank', rel: 'noopener', 'aria-label': 'Открыть на YouTube' },
-          el('img', { src: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, alt: '', loading: 'lazy' })),
+          ytThumb(el('img', { src: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, alt: '', loading: 'lazy' }), id)),
         el('div', { class: 'link-info' }, el('b', { text: title || 'Название подтянется после сохранения', class: title ? '' : 'vid-pending' }), kind),
         el('div', { class: 'link-tools' },
           el('button', { type: 'button', text: '↑', 'aria-label': 'Видео выше', onclick: () => { if (card.previousElementSibling) list.insertBefore(card, card.previousElementSibling); update(); } }),

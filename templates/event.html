@@ -3,7 +3,7 @@
 {% block description %}{{ e.description }}{% endblock %}
 {% block canonical %}{{ e.abs_url }}{% endblock %}
 {% block head %}
-  <script src="/static/events/event.js?v=videos-1" defer></script>
+  <script src="/static/events/event.js?v=polish-1" defer></script>
   <script type="application/ld+json">
   {{ {
     "@context": "https://schema.org",
@@ -80,10 +80,10 @@
         <button type="button" class="vids-all" data-reel-all hidden><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg>Смотреть подряд</button>
       </div>
     </div>
-    <div class="vids-rail">
+    <div class="vids-rail{% if e.videos|length <= 2 and e.videos|selectattr('short')|list|length == e.videos|length %} vids-few{% endif %}">
       {% for v in e.videos %}
       <a class="vid{% if v.short %} is-short{% endif %}" href="https://www.youtube.com/{{ 'shorts/' if v.short else 'watch?v=' }}{{ v.id }}" target="_blank" rel="noopener" data-reel="{{ loop.index0 }}" data-id="{{ v.id }}" data-short="{{ 1 if v.short else 0 }}" data-title="{{ v.title }}" style="--order: {{ loop.index0 }}">
-        <img src="https://i.ytimg.com/vi/{{ v.id }}/hqdefault.jpg" alt="" width="480" height="360" loading="lazy" decoding="async">
+        <img src="https://i.ytimg.com/vi/{{ v.id }}/{{ 'oar2' if v.short else 'maxresdefault' }}.jpg" alt="" {% if v.short %}width="1080" height="1920"{% else %}width="1280" height="720"{% endif %} {% if loop.index <= 2 %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
         <span class="vid-top"><span class="vid-badge">{{ "Shorts" if v.short else "Видео" }}</span><span class="vid-num">{{ "%02d" % loop.index }}</span></span>
         <span class="vid-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.6v12.8a1 1 0 0 0 1.52.85l10.4-6.4a1 1 0 0 0 0-1.7L9.52 4.75A1 1 0 0 0 8 5.6Z"/></svg></span>
         <span class="vid-title">{{ v.title or "Смотреть видео" }}</span>

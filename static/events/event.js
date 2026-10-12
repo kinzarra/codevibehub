@@ -136,6 +136,23 @@
   const YT = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8ZM9.8 15.1V8.9l5.8 3.1-5.8 3.1Z"/></svg>';
   const videos = cards.map((c) => ({ id: c.dataset.id, short: c.dataset.short === '1', title: c.dataset.title, url: c.href }));
 
+  // Превью: hqdefault — 480×360 с полями (для Shorts это мыло), поэтому сначала берём большие варианты.
+  // Отсутствующий вариант YouTube отдаёт 404 с заглушкой 120×90 — тогда переходим к следующему.
+  const ytImg = (id, name) => `https://i.ytimg.com/vi/${id}/${name}.jpg`;
+  const thumbSources = (v) => (v.short ? ['oar2', 'maxresdefault', 'hqdefault'] : ['maxresdefault', 'sddefault', 'hqdefault']).map((n) => ytImg(v.id, n));
+  const bad = (img) => img.complete && img.naturalWidth > 0 && img.naturalWidth <= 120;
+  function applyThumb(img, v, onReady) {
+    const list = thumbSources(v);
+    let i = Math.max(0, list.indexOf(img.currentSrc || img.src));
+    const next = () => { if (i < list.length - 1) img.src = list[++i]; else onReady?.(); };
+    img.addEventListener('error', next);
+    img.addEventListener('load', () => { if (bad(img)) next(); else onReady?.(); });
+    if (img.getAttribute('src') !== list[i]) img.src = list[i];
+    else if (img.complete) { if (img.naturalWidth === 0 || bad(img)) next(); else onReady?.(); }
+  }
+  rail.classList.add('has-js');
+  cards.forEach((c, i) => applyThumb(c.querySelector('img'), videos[i], () => c.classList.add('is-loaded')));
+
   // ---- лента на странице: стрелки на десктопе
   const arrows = [...document.querySelectorAll('[data-vids-scroll]')];
   const syncArrows = () => {
@@ -166,10 +183,10 @@
 
   const slides = videos.map((v, i) => {
     const s = h('section', 'reel-slide' + (v.short ? ' is-short' : ''), { 'data-i': i, 'aria-label': `Видео ${i + 1} из ${videos.length}` });
-    const thumb = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`;
-    s.style.setProperty('--thumb', `url("${thumb}")`);
+    s.style.setProperty('--thumb', `url("${ytImg(v.id, 'default')}")`);  // под blur качество не нужно
     const frame = h('div', 'reel-frame');
-    const poster = h('img', 'reel-poster', { src: thumb, alt: '', loading: 'lazy', decoding: 'async' });
+    const poster = h('img', 'reel-poster', { alt: '', loading: 'lazy', decoding: 'async' });
+    applyThumb(poster, v);
     const play = h('button', 'reel-start', { type: 'button', 'aria-label': 'Смотреть: ' + (v.title || 'видео') });
     play.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.6v12.8a1 1 0 0 0 1.52.85l10.4-6.4a1 1 0 0 0 0-1.7L9.52 4.75A1 1 0 0 0 8 5.6Z"/></svg>';
     play.addEventListener('click', () => activate(i, true));
@@ -219,6 +236,7 @@
     if (current >= 0) hint.classList.add('gone');
     slides.forEach((_, j) => { if (j !== i) deactivate(j); });
     current = i;
+    slideAll.forEach((s, j) => s.classList.toggle('is-near', Math.abs(j - i) <= 1));  // тяжёлый фон — только рядом
     const isEnd = i >= videos.length;
     counter.innerHTML = isEnd ? 'Конец' : `<b>${String(i + 1).padStart(2, '0')}</b> / ${String(videos.length).padStart(2, '0')}`;
     [...progress.children].forEach((bar, j) => { bar.className = j < i ? 'done' : j === i ? 'on' : ''; });
@@ -239,7 +257,9 @@
   function open(i, push = true) {
     lastFocus = document.activeElement;
     current = -1;
-    hint.classList.remove('gone');
+    let seen = false;
+    try { seen = localStorage.getItem('reel-hint-seen') === '1'; localStorage.setItem('reel-hint-seen', '1'); } catch {}
+    hint.classList.toggle('gone', seen);
     if (push) history.pushState({ reel: true }, '', here + '#video-' + videos[i].id);
     dlg.showModal();
     slides[i].scrollIntoView({ behavior: 'instant' });
