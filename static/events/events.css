@@ -183,7 +183,7 @@ body { display: flex; flex-direction: column; }
   transition: border-color .2s, background .2s, transform .15s;
 }
 .pill-btn::before { content: "✦"; color: var(--a); }
-.pill-btn:hover { border-color: var(--a); transform: translateY(-2px); }
+@media (hover: hover) { .pill-btn:hover { border-color: var(--a); transform: translateY(-2px); } }
 .pill-btn .pb-me { display: none; padding: 2px 10px; border-radius: 999px; background: var(--a); color: var(--bg); font: 800 12px 'JetBrains Mono', monospace; text-transform: uppercase; }
 .pill-btn.on { border-color: var(--a); background: color-mix(in srgb, var(--a) 14%, #0B0B11); color: var(--fg); }
 .pill-btn.on .pb-me { display: inline; }
@@ -355,7 +355,7 @@ body { display: flex; flex-direction: column; }
 .vids-arrow:disabled { opacity: .3; cursor: default; }
 .vids-all { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer;
   background: linear-gradient(100deg, var(--a), var(--b)); color: #07070A; font: 800 14px 'Manrope', sans-serif; box-shadow: 0 8px 28px #67E8F930; transition: transform .2s, box-shadow .2s; }
-.vids-all:hover { transform: translateY(-2px); box-shadow: 0 12px 34px #C084FC45; }
+@media (hover: hover) { .vids-all:hover { transform: translateY(-2px); box-shadow: 0 12px 34px #C084FC45; } }
 @media (hover: none) { .vids-arrow { display: none; } }
 
 .vids-rail {
@@ -377,7 +377,7 @@ body { display: flex; flex-direction: column; }
   animation: stat-enter .6s ease both; animation-delay: calc(var(--order) * 70ms);
 }
 .vid.is-short { aspect-ratio: 9 / 16; }
-.vid img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; transition: transform .6s cubic-bezier(.2,.8,.2,1), filter .4s; }
+.vid img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; transition: transform .6s cubic-bezier(.2,.8,.2,1); }
 .vid::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #07070A70 0%, transparent 26%, transparent 48%, #07070AE8 100%); }
 .vid-top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; }
 .vid-badge { padding: 6px 10px; border-radius: 10px; background: #07070A80; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid #FFFFFF26; font: 700 11px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: #DDFBFF; }
@@ -390,11 +390,11 @@ body { display: flex; flex-direction: column; }
 }
 .vid-play svg { width: 26px; height: 26px; margin-left: 3px; color: #fff; }
 .vid-play::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 1px solid #67E8F980; opacity: 0; }
-.vid-title { position: absolute; left: 16px; right: 16px; bottom: 16px; font: 700 15px/1.35 'Manrope', sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 10px #000; }
+.vid-title { position: absolute; left: 16px; right: 16px; bottom: 16px; font: 700 15px/1.35 'Manrope', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 10px #000; }
 .vid:focus-visible { outline: 2px solid var(--a); outline-offset: 3px; }
 @media (hover: hover) {
   .vid:hover { transform: translateY(-6px); border-color: #67E8F980; box-shadow: 0 24px 60px #00000070, 0 0 0 1px #67E8F940, 0 10px 50px #67E8F922; }
-  .vid:hover img { transform: scale(1.06); filter: saturate(1.15); }
+  .vid:hover img { transform: scale(1.06); }
   .vid:hover .vid-play { transform: scale(1.12); background: linear-gradient(135deg, #67E8F9D0, #C084FCD0); border-color: transparent; }
   .vid:hover .vid-play::before { animation: vid-ring 1.4s ease-out infinite; }
 }
@@ -424,11 +424,11 @@ dialog.reel[open] { animation: reel-in .35s cubic-bezier(.2,.8,.2,1); }
   --gap-top: max(64px, calc(env(safe-area-inset-top) + 56px)); --gap-bot: max(112px, calc(env(safe-area-inset-bottom) + 104px));
   position: relative; height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; overflow: hidden; isolation: isolate;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: var(--gap-top) 16px 0;
-  content-visibility: auto; contain-intrinsic-size: 100vw 100vh;
   --fw: min(100vw - 32px, 1120px, (100dvh - var(--gap-top) - var(--gap-bot)) * 16 / 9);  /* ширина ролика и подписи */
 }
 .reel-slide.is-short { --fw: min(100vw - 32px, (100dvh - var(--gap-top) - var(--gap-bot)) * 9 / 16); }
-.reel-slide::before { content: ''; position: absolute; inset: -60px; z-index: -1; background: var(--thumb) center / cover; filter: blur(60px) saturate(1.6) brightness(.45); transform: scale(1.1); }
+.reel-slide::before { content: ''; position: absolute; inset: -40px; z-index: -1; background: #050508; }
+.reel-slide.is-near::before { background: var(--thumb) center / cover; filter: blur(24px) saturate(1.5) brightness(.42); transform: scale(1.1); will-change: transform; }
 .reel-slide::after { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 50% 40%, transparent 30%, #050508D0 100%); }
 
 .reel-frame {
@@ -452,7 +452,7 @@ dialog.reel[open] { animation: reel-in .35s cubic-bezier(.2,.8,.2,1); }
   border: 1px solid #FFFFFF60; background: #FFFFFF26; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: #fff; transition: transform .25s, opacity .25s;
 }
 .reel-start svg { width: 32px; height: 32px; margin-left: 4px; }
-.reel-start:hover { transform: scale(1.08); }
+@media (hover: hover) { .reel-start:hover { transform: scale(1.08); } }
 
 .reel-caption { width: max(var(--fw), min(100vw - 32px, 420px)); display: flex; align-items: center; gap: 14px; justify-content: space-between; }
 .reel-caption b { min-width: 0; font: 700 15px/1.35 'Manrope', sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 1px 12px #000; }
@@ -523,3 +523,74 @@ dialog.reel[open] { animation: reel-in .35s cubic-bezier(.2,.8,.2,1); }
 .vids-empty-plus { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: linear-gradient(135deg, var(--a), var(--b)); color: #07070A; font: 800 26px 'Manrope', sans-serif; }
 .vids-empty b { display: block; margin-bottom: 4px; font-size: 17px; }
 .vids-empty small { color: var(--muted); font-size: 14px; line-height: 1.4; }
+
+/* ---------- Полировка страницы события: ритм, мобильная плавность, Shorts-просмотр ---------- */
+.top, .foot { padding-left: max(var(--pad), env(safe-area-inset-left)); padding-right: max(var(--pad), env(safe-area-inset-right)); }
+.foot { padding-bottom: max(22px, calc(env(safe-area-inset-bottom) + 12px)); }
+.ev { padding-left: max(var(--pad), env(safe-area-inset-left)); padding-right: max(var(--pad), env(safe-area-inset-right)); }
+.ev-detail { overflow-x: clip; }
+.ev-detail .lead { font-size: clamp(17px, 1.5vw, 19px); line-height: 1.5; }
+.ev-detail .ev-section { padding-top: clamp(40px, 8vw, 72px); }
+.ev-detail .ev-section h2, .ev-detail .ev-cta h2 { font-size: clamp(24px, 4vw, 36px); }
+
+@media (max-width: 760px) {
+  .top { gap: 14px; padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: 8px; }
+  .top .actions { gap: 8px; }
+  .top .actions .btn, .top .actions .pill { min-height: 40px; padding: 0 12px; font-size: 13px; gap: 6px; }
+  .top .actions { flex-wrap: nowrap; }
+  .top .join-icon { display: none; }
+  .ev-detail .agenda { grid-auto-rows: auto; }
+  .ev-detail .agenda li { min-height: 88px; }
+  .ev-detail .ev-hero { gap: 20px; padding-top: 24px; }
+  .ev-detail .ev-hero .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .ev-detail .ev-hero .actions :is(.btn-primary, .rsvp) { grid-column: 1 / -1; }
+  .ev-detail .ev-hero .actions .btn { min-width: 0; padding-left: 12px; padding-right: 12px; font-size: 14px; }
+  .ev-detail .ev-hero .actions .btn-ghost span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* Карточки видео: скелет до загрузки превью, жесты */
+.vids-rail { touch-action: pan-x pan-y; }
+.vids-rail.has-js .vid:not(.is-loaded) { background: linear-gradient(100deg, #0C0E17 30%, #1A1F30 50%, #0C0E17 70%) 0 0 / 300% 100%; animation: stat-enter .6s ease both, vid-shimmer 1.4s linear infinite; animation-delay: calc(var(--order) * 70ms), 0s; }
+.vids-rail.has-js .vid img { opacity: 0; transition: opacity .4s, transform .6s cubic-bezier(.2,.8,.2,1); }
+.vids-rail.has-js .vid.is-loaded img { opacity: 1; }
+@keyframes vid-shimmer { to { background-position: -300% 0; } }
+.vid-badge::before { box-shadow: none; }
+@media (max-width: 760px) {
+  .vids-rail { scroll-padding-inline: 0; }
+  .vid { scroll-snap-align: center; }
+  /* 1–2 Shorts — сетка во всю ширину вместо обрезанной ленты */
+  .vids-rail.vids-few { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; overflow: visible; margin: 0; padding: 4px 0 8px; }
+  .vids-few .vid { height: auto; width: 100%; max-width: none; }
+  .vids-few .vid-title { font-size: 13px; }
+}
+/* Без мыши — без стекла: backdrop-filter поверх скролла дорого перерисовывается */
+@media (hover: none), (max-width: 760px) {
+  .vid-badge { background: #07070AB8; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .vid-play { background: #FFFFFF2E; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .reel-start, .reel-yt, .reel-btn, .reel-hint { backdrop-filter: none; -webkit-backdrop-filter: none; background: #0B0B11D9; }
+  .reel-side { display: none; }
+}
+
+/* Просмотр: фоны страницы не рисуем под диалогом */
+html:has(dialog.reel[open]) :is(.grid-bg, .glow) { display: none; }
+.reel-track { touch-action: pan-y; }
+@media (max-width: 760px) {
+  dialog.reel[open] { animation-name: reel-fade; }
+  .reel-slide.is-near::before { background: radial-gradient(ellipse at 50% 30%, #67E8F91F, transparent 60%), radial-gradient(ellipse at 50% 80%, #C084FC1F, transparent 60%), #050508; filter: none; transform: none; will-change: auto; }
+  /* Shorts как в YouTube: кадр во всю ширину, подпись поверх низа кадра */
+  /* Кадр ниже верхней панели, чтобы крестик не налезал на кнопки плеера */
+  .reel-slide.is-short { padding: var(--gap-top) 0 0; gap: 0; --fw: min(100vw, (100dvh - var(--gap-top) - 12px) * 9 / 16); }
+  .reel-slide.is-short .reel-frame { border-radius: 0; box-shadow: none; }
+  .reel-slide.is-short .reel-caption {
+    position: absolute; z-index: 2; left: 50%; transform: translateX(-50%); width: var(--fw); padding: 48px 14px 0;
+    bottom: max(calc(env(safe-area-inset-bottom) + 14px), calc((100dvh - var(--gap-top) - var(--fw) * 16 / 9) / 2 + 14px));
+    background: linear-gradient(transparent, #000000A8 60%); pointer-events: none; transition: opacity .4s;
+  }
+  .reel-slide.is-short .reel-caption .reel-yt { pointer-events: auto; flex: none; min-height: 36px; }
+  /* Во время просмотра подпись уходит, чтобы не перекрывать управление плеера */
+  .reel-slide.is-short .reel-frame.is-playing + .reel-caption { opacity: 0; transition-delay: 2.5s; }
+  .reel-slide.is-short .reel-frame.is-playing + .reel-caption .reel-yt { pointer-events: none; }
+}
+@media (max-width: 760px) { .reel-hint { top: max(70px, calc(env(safe-area-inset-top) + 62px)); bottom: auto; } }
+@keyframes reel-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .vids-rail.has-js .vid:not(.is-loaded) { animation: none; } }
