@@ -49,6 +49,7 @@ class Event(Base):
     audience: Mapped[list] = mapped_column(JSONB, default=list)   # [{id, text}]; id стабилен — к нему привязаны отметки «это я»
     # [{id, name, role, bio, photo_key, links: [{label, url}]}]; photo_key — объект в S3 (бакет S3_AVATAR_BUCKET)
     speakers: Mapped[list] = mapped_column(JSONB, default=list)
+    videos: Mapped[list] = mapped_column(JSONB, default=list)     # [{id, short, title}]; id — ролик YouTube, short — вертикальный 9:16
     owner_email: Mapped[str | None] = mapped_column(String(255))  # кто создал; пусто у мероприятий из посева
     # Соавторы: [{email (нормализованный), added_by, added_at}]. Видят «Отметки посетителей», править не могут.
     coauthors: Mapped[list] = mapped_column(JSONB, default=list)

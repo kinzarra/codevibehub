@@ -123,3 +123,162 @@
   cards.forEach(card => { const count = card.querySelector('.like-n'); if (count) observer.observe(count, { childList: true, characterData: true, subtree: true }); });
   update();
 })();
+
+// Видео: лента карточек и полноэкранный просмотр «как в Shorts» — листаем вверх-вниз, плеер YouTube грузится
+// только на видимом ролике. Без JS карточки — обычные ссылки на YouTube.
+(() => {
+  const cards = [...document.querySelectorAll('[data-reel]')];
+  if (!cards.length) return;
+  const rail = document.querySelector('.vids-rail');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const h = (tag, cls, attrs = {}) => { const n = document.createElement(tag); if (cls) n.className = cls; for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
+  const icon = (d, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  const YT = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8ZM9.8 15.1V8.9l5.8 3.1-5.8 3.1Z"/></svg>';
+  const videos = cards.map((c) => ({ id: c.dataset.id, short: c.dataset.short === '1', title: c.dataset.title, url: c.href }));
+
+  // ---- лента на странице: стрелки на десктопе
+  const arrows = [...document.querySelectorAll('[data-vids-scroll]')];
+  const syncArrows = () => {
+    const max = rail.scrollWidth - rail.clientWidth - 2;
+    arrows[0].disabled = rail.scrollLeft <= 2; arrows[1].disabled = rail.scrollLeft >= max;
+    arrows.forEach((a) => { a.hidden = max <= 0; });
+    rail.classList.toggle('at-start', rail.scrollLeft <= 2); rail.classList.toggle('at-end', rail.scrollLeft >= max);
+  };
+  arrows.forEach((a) => a.addEventListener('click', () => rail.scrollBy({ left: Number(a.dataset.vidsScroll) * rail.clientWidth * 0.8, behavior: reduced ? 'auto' : 'smooth' })));
+  rail.addEventListener('scroll', syncArrows, { passive: true });
+  addEventListener('resize', syncArrows);
+  syncArrows();
+  const all = document.querySelector('[data-reel-all]');
+  all.hidden = false;
+
+  // ---- полноэкранный просмотр
+  const dlg = h('dialog', 'reel', { 'aria-label': 'Просмотр видео' });
+  const progress = h('div', 'reel-progress', { 'aria-hidden': 'true' });
+  videos.forEach(() => progress.append(h('i')));
+  const counter = h('span', 'reel-counter', { 'aria-live': 'polite' });
+  const closeBtn = h('button', 'reel-btn reel-close', { type: 'button', 'aria-label': 'Закрыть' }); closeBtn.innerHTML = icon('M6 6l12 12M18 6L6 18');
+  const top = h('div', 'reel-top'); top.append(counter, closeBtn);
+  const track = h('div', 'reel-track');
+  const up = h('button', 'reel-btn', { type: 'button', 'aria-label': 'Предыдущее видео' }); up.innerHTML = icon('M6 15l6-6 6 6');
+  const down = h('button', 'reel-btn', { type: 'button', 'aria-label': 'Следующее видео' }); down.innerHTML = icon('M6 9l6 6 6-6');
+  const side = h('div', 'reel-side'); side.append(up, down);
+  const hint = h('div', 'reel-hint', { 'aria-hidden': 'true' }); hint.innerHTML = `${icon('M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4', 16)}<span>Листайте вверх-вниз</span>`;
+
+  const slides = videos.map((v, i) => {
+    const s = h('section', 'reel-slide' + (v.short ? ' is-short' : ''), { 'data-i': i, 'aria-label': `Видео ${i + 1} из ${videos.length}` });
+    const thumb = `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`;
+    s.style.setProperty('--thumb', `url("${thumb}")`);
+    const frame = h('div', 'reel-frame');
+    const poster = h('img', 'reel-poster', { src: thumb, alt: '', loading: 'lazy', decoding: 'async' });
+    const play = h('button', 'reel-start', { type: 'button', 'aria-label': 'Смотреть: ' + (v.title || 'видео') });
+    play.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.6v12.8a1 1 0 0 0 1.52.85l10.4-6.4a1 1 0 0 0 0-1.7L9.52 4.75A1 1 0 0 0 8 5.6Z"/></svg>';
+    play.addEventListener('click', () => activate(i, true));
+    frame.append(poster, play);
+    const cap = h('div', 'reel-caption');
+    const title = h('b'); title.textContent = v.title || 'Видео ' + (i + 1);
+    const yt = h('a', 'reel-yt', { href: v.url, target: '_blank', rel: 'noopener' }); yt.innerHTML = `${YT}<span>Открыть в YouTube</span>`;
+    yt.addEventListener('click', () => deactivate(i));  // не играем два раза: здесь ставим на паузу
+    cap.append(title, yt);
+    s.append(frame, cap);
+    track.append(s);
+    return s;
+  });
+  const end = h('section', 'reel-slide reel-end', { 'data-i': videos.length });
+  end.innerHTML = `<div class="reel-end-card"><span class="reel-end-mark">✦</span><h3>Это все видео</h3><p>${videos.length} ${videos.length % 10 === 1 && videos.length % 100 !== 11 ? 'ролик' : [2, 3, 4].includes(videos.length % 10) && ![12, 13, 14].includes(videos.length % 100) ? 'ролика' : 'роликов'} с этого мероприятия</p><div class="reel-end-actions"><button type="button" class="btn btn-primary" data-again><span>Смотреть сначала</span></button><button type="button" class="btn btn-ghost" data-back><span>К мероприятию</span></button></div></div>`;
+  end.querySelector('[data-again]').addEventListener('click', () => go(0));
+  end.querySelector('[data-back]').addEventListener('click', () => close());
+  track.append(end);
+  dlg.append(progress, top, track, side, hint);
+  document.body.append(dlg);
+
+  let current = -1, timer = 0, lastFocus = null;
+  const here = location.pathname + location.search;
+  const slideAll = [...slides, end];
+  const src = (v) => `https://www.youtube-nocookie.com/embed/${v.id}?` + new URLSearchParams({
+    autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, ...(v.short ? { loop: 1, playlist: v.id } : {}) });
+
+  function activate(i, force = false) {
+    const s = slides[i];
+    if (!s || (s.querySelector('iframe') && !force)) return;
+    const frame = s.querySelector('.reel-frame');
+    frame.querySelector('iframe')?.remove();
+    const f = h('iframe', '', { src: src(videos[i]), title: videos[i].title || 'Видео YouTube', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen; web-share',
+      allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' });
+    f.addEventListener('load', () => frame.classList.add('is-loaded'), { once: true });
+    frame.classList.add('is-playing');
+    frame.append(f);
+  }
+  function deactivate(i) {
+    const frame = slides[i]?.querySelector('.reel-frame');
+    if (!frame) return;
+    frame.querySelector('iframe')?.remove();
+    frame.classList.remove('is-playing', 'is-loaded');
+  }
+  function setCurrent(i) {
+    if (i === current) return;
+    if (current >= 0) hint.classList.add('gone');
+    slides.forEach((_, j) => { if (j !== i) deactivate(j); });
+    current = i;
+    const isEnd = i >= videos.length;
+    counter.innerHTML = isEnd ? 'Конец' : `<b>${String(i + 1).padStart(2, '0')}</b> / ${String(videos.length).padStart(2, '0')}`;
+    [...progress.children].forEach((bar, j) => { bar.className = j < i ? 'done' : j === i ? 'on' : ''; });
+    up.disabled = i <= 0; down.disabled = isEnd;
+    if (!isEnd) history.replaceState({ reel: true }, '', here + '#video-' + videos[i].id);
+    clearTimeout(timer);
+    if (!isEnd) timer = setTimeout(() => activate(i), 250);  // не грузим плееры, пока ролики пролистывают
+  }
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) setCurrent(Number(e.target.dataset.i));
+  }, { root: track, threshold: 0.6 });
+  slideAll.forEach((s) => io.observe(s));
+
+  const go = (i) => slideAll[Math.max(0, Math.min(slideAll.length - 1, i))].scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  up.addEventListener('click', () => go(current - 1));
+  down.addEventListener('click', () => go(current + 1));
+
+  function open(i, push = true) {
+    lastFocus = document.activeElement;
+    current = -1;
+    hint.classList.remove('gone');
+    if (push) history.pushState({ reel: true }, '', here + '#video-' + videos[i].id);
+    dlg.showModal();
+    slides[i].scrollIntoView({ behavior: 'instant' });
+    setCurrent(i);
+    clearTimeout(timer); activate(i);  // открыли касанием — сразу запускаем
+    closeBtn.focus({ preventScroll: true });
+  }
+  function shut() {
+    if (!dlg.open) return;
+    const last = Math.min(current, videos.length - 1);
+    clearTimeout(timer);
+    slides.forEach((_, j) => deactivate(j));
+    dlg.close();
+    const card = cards[last];
+    card.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' });
+    (lastFocus === all ? all : card).focus({ preventScroll: true });
+  }
+  // «Назад» в браузере и жест «назад» на телефоне закрывают просмотр, а не уводят со страницы
+  const close = () => { if (history.state?.reel) history.back(); else shut(); };
+  addEventListener('popstate', () => { if (!history.state?.reel) shut(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+  dlg.addEventListener('close', () => { if (history.state?.reel) history.back(); });
+  closeBtn.addEventListener('click', close);
+  dlg.addEventListener('keydown', (e) => {
+    if (e.target.closest('a, button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (['ArrowDown', 'PageDown', 'j'].includes(e.key)) { e.preventDefault(); go(current + 1); }
+    else if (['ArrowUp', 'PageUp', 'k'].includes(e.key)) { e.preventDefault(); go(current - 1); }
+  });
+
+  cards.forEach((c, i) => c.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;  // открыть в новой вкладке — как обычную ссылку
+    e.preventDefault(); open(i);
+  }));
+  all.addEventListener('click', () => open(0));
+
+  // Прямая ссылка на ролик: /events/<slug>#video-<id>
+  const fromHash = videos.findIndex((v) => location.hash === '#video-' + v.id);
+  if (fromHash >= 0) {
+    history.replaceState(null, '', here);
+    open(fromHash);
+  }
+})();

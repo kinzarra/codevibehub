@@ -24,6 +24,8 @@ async def init_db() -> None:
     # Модели должны быть импортированы до вызова, чтобы попасть в Base.metadata.
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # create_all не добавляет колонки в существующие таблицы — новые колонки дописываем здесь (идемпотентно)
+        await conn.execute(text("ALTER TABLE events ADD COLUMN IF NOT EXISTS videos JSONB NOT NULL DEFAULT '[]'::jsonb"))
 
 
 async def ping() -> bool:
